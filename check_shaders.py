@@ -4,10 +4,11 @@ with open('data/shaders.json', 'r', encoding='utf-8') as f:
     data = json.load(f)
 
 shaders = data.get('shaders', data)
-print(f'Total: {len(shaders)} shaders')
 
-# Find shaders starting with quotes or brackets
-special = [s for s in shaders if s.get('title', '').startswith('"') or s.get('title', '').startswith('[')]
-print(f'\nShaders starting with " or [:')
-for s in special:
-    print(f"  {s.get('title')} | img: {s.get('image_url', 'NONE')[:60]}...")
+# Find Hand Drawn shader and show char codes
+for s in shaders:
+    if 'Hand Drawn' in s.get('title', ''):
+        title = s['title']
+        print(f"Title: {title}")
+        print(f"First 5 chars hex: {[hex(ord(c)) for c in title[:5]]}")
+        break

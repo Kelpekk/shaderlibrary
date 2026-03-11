@@ -12,8 +12,10 @@ func tr_key(key: String) -> String:
 # Helper function for sorting - normalize Unicode quotes to ASCII for proper sorting
 func _normalize_title(title: String) -> String:
 	# Replace fancy quotes with regular ones so they sort before letters
+	# U+201C = left double quote, U+201D = right double quote
 	var t = title.to_lower()
-	t = t.replace(""", "\"").replace(""", "\"").replace("'", "'").replace("'", "'")
+	t = t.replace(String.chr(0x201C), "\"").replace(String.chr(0x201D), "\"")
+	t = t.replace(String.chr(0x2018), "'").replace(String.chr(0x2019), "'")
 	return t
 
 # UI Elements
