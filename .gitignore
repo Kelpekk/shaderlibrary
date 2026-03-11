@@ -1,0 +1,15 @@
+# Godot
+.godot/
+*.import
+*.uid
+
+# Cache
+shader_library_cache/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

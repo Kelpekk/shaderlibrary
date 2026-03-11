@@ -1,0 +1,21 @@
+<svg width="64" height="64" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="64" height="64" rx="8" fill="#478cbf"/>
+  
+  <!-- Book/Library icon -->
+  <rect x="12" y="16" width="40" height="36" rx="2" fill="#ffffff"/>
+  <rect x="14" y="18" width="36" height="32" rx="1" fill="#478cbf"/>
+  
+  <!-- Pages -->
+  <line x1="32" y1="18" x2="32" y2="50" stroke="#ffffff" stroke-width="2"/>
+  <line x1="20" y1="26" x2="28" y2="26" stroke="#ffffff" stroke-width="1.5"/>
+  <line x1="20" y1="32" x2="28" y2="32" stroke="#ffffff" stroke-width="1.5"/>
+  <line x1="20" y1="38" x2="28" y2="38" stroke="#ffffff" stroke-width="1.5"/>
+  <line x1="36" y1="26" x2="44" y2="26" stroke="#ffffff" stroke-width="1.5"/>
+  <line x1="36" y1="32" x2="44" y2="32" stroke="#ffffff" stroke-width="1.5"/>
+  <line x1="36" y1="38" x2="44" y2="38" stroke="#ffffff" stroke-width="1.5"/>
+  
+  <!-- Sparkle to indicate "shader" -->
+  <circle cx="50" cy="20" r="8" fill="#ffd700"/>
+  <polygon points="50,14 51,18 55,18 52,21 53,25 50,23 47,25 48,21 45,18 49,18" fill="#ffffff"/>
+</svg>
