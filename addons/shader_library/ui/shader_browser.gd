@@ -9,6 +9,13 @@ const Translations = preload("res://addons/shader_library/api/translations.gd")
 func tr_key(key: String) -> String:
 	return Translations.t(key)
 
+# Helper function for sorting - normalize Unicode quotes to ASCII for proper sorting
+func _normalize_title(title: String) -> String:
+	# Replace fancy quotes with regular ones so they sort before letters
+	var t = title.to_lower()
+	t = t.replace(""", "\"").replace(""", "\"").replace("'", "'").replace("'", "'")
+	return t
+
 # UI Elements
 var search_input: LineEdit
 var type_option: OptionButton
@@ -419,8 +426,10 @@ func _apply_filters(_arg = null) -> void:
 	match sort_option.selected:
 		1:  # Popular - convert likes to int for proper sorting
 			filtered_shaders.sort_custom(func(a, b): return int(a.get("likes", "0")) > int(b.get("likes", "0")))
-		2:  # Name
-			filtered_shaders.sort_custom(func(a, b): return a.get("title", "") < b.get("title", ""))
+		2:  # Name - strip non-alphanumeric from start for proper sorting
+			filtered_shaders.sort_custom(func(a, b): 
+				return _normalize_title(a.get("title", "")) < _normalize_title(b.get("title", ""))
+			)
 	
 	current_page = 1
 	_display_page()
