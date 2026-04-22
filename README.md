@@ -2,7 +2,7 @@
 
 [![Godot Engine](https://img.shields.io/badge/Godot-4.x-blue?logo=godot-engine&logoColor=white)](https://godotengine.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-1.3.1-orange)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-1.3.2-orange)](CHANGELOG.md)
 
 Browse and install shaders from [godotshaders.com](https://godotshaders.com) directly in the Godot Editor!
 
@@ -30,7 +30,12 @@ Browse and install shaders from [godotshaders.com](https://godotshaders.com) dir
   - Browse library directly from inspector
   - Create new shaders with templates
 - **📦 Installed Manager** - View, open, and delete installed shaders
-- **💾 Smart Caching** - 24-hour cache with daily auto-updates
+- **� Auto-Update System** - Automatic update detection and one-click installation
+  - Checks for new plugin versions on GitHub
+  - Shows update notification when available
+  - Downloads and installs updates automatically
+  - Restarts editor to apply changes
+- **�💾 Smart Caching** - 24-hour cache with daily auto-updates
 - **🖥️ HiDPI Support** - Perfect scaling on 4K/high-DPI displays
 - **🌍 Multi-Language** - 9 languages supported
 - **🎨 Native Godot UI** - Seamless integration with editor theme
@@ -98,7 +103,8 @@ addons/shader_library/
 │   ├── cache_manager.gd        # Downloads shader database
 │   ├── installed_manager.gd    # Track installed shaders
 │   ├── shader_installer.gd     # Download & install shaders
-│   └── translations.gd         # Multi-language support
+│   ├── translations.gd         # Multi-language support
+│   └── update_checker.gd       # Auto-update system
 └── ui/
     ├── shader_browser.gd       # Main UI logic
     ├── shader_browser.tscn     # UI scene
@@ -109,6 +115,30 @@ addons/shader_library/
 ├── shader_applier_inspector.gd # Custom inspector plugin
 ├── shader_applier.gd           # ShaderApplier custom node
 ```
+
+## ⚙️ Configuration
+
+### Auto-Update System
+
+The plugin can automatically check for updates from GitHub. To configure:
+
+1. Open `addons/shader_library/plugin.cfg`
+2. In the `[updates]` section, set your GitHub repository:
+   ```ini
+   [updates]
+   # GitHub repository for checking updates (format: username/repository)
+   github_repo="YOUR_USERNAME/godot-shader-library"
+   # Set to false to disable auto-update checks
+   auto_check=true
+   ```
+3. The plugin will check for updates 2 seconds after startup
+4. When an update is available, an "Update Available" button appears in the toolbar
+5. Click to download and install - the editor will restart automatically
+
+**For Plugin Developers:**
+- Create releases on GitHub with version tags (e.g., `v1.4.0`)
+- Include a `.zip` file with the addon in the release assets
+- The plugin compares versions and notifies users automatically
 
 ## 🌐 Supported Languages
 

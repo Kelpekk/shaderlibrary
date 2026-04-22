@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.3.2] - 2026-04-22
+
+### Added
+- **Auto-Update System** - Automatic plugin update detection and installation
+  - Checks GitHub for new releases on startup (configurable)
+  - Shows "Update Available" button when new version is detected
+  - One-click download and installation of updates
+  - Automatic editor restart after update
+  - Configurable via `plugin.cfg` with `github_repo` setting
+  - Smart version comparison using semantic versioning
+  - Displays changelog in update dialog
+  - Creates backup before updating
+  - Graceful error handling with user notifications
+
+### Changed
+- Updated version to 1.4.0
+- Added `[updates]` section in `plugin.cfg` for configuration
+
+### Technical
+- New `UpdateChecker` class in `api/update_checker.gd`
+- GitHub API integration for release checking
+- ZIP download and extraction system
+- Editor restart functionality
+
 ## [1.3.1] - 2026-04-20
 
 ### Added
