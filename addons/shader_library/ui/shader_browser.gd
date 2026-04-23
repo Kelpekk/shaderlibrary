@@ -368,7 +368,6 @@ func _build_filters(parent: Control) -> void:
 	license_option.add_item(tr_key("all_licenses"))
 	license_option.add_item("MIT")
 	license_option.add_item("CC0")
-	license_option.add_item("CC-BY")
 	license_option.add_item("Shadertoy port")
 	license_option.add_item("GNU GPL v.3")
 	license_option.item_selected.connect(_on_filter_changed)
