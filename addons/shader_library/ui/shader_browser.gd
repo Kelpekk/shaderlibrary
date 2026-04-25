@@ -543,7 +543,8 @@ func _apply_filters(_arg = null) -> void:
 	if type_idx > 0:
 		var type_name = type_option.get_item_text(type_idx)
 		filtered_shaders = filtered_shaders.filter(func(s):
-			return type_name.to_lower() in s.get("category", "").to_lower()
+			var category = s.get("category", "").to_lower().replace("_", " ")
+			return type_name.to_lower() in category
 		)
 	
 	# License filter
