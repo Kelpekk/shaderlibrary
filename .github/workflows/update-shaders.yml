@@ -2,8 +2,10 @@ name: Update Shader Database
 
 on:
   schedule:
-    # Run daily at midnight UTC
-    - cron: '0 0 * * *'
+    # Run weekly, Sunday 00:00 UTC. Weekly (not daily) keeps the Jina reader's
+    # free token usage low enough to stay within the free tier; shader listings
+    # don't change fast enough to need daily refreshes.
+    - cron: '0 0 * * 0'
   workflow_dispatch: # Allow manual trigger
 
 permissions:
@@ -30,6 +32,11 @@ jobs:
           pip install curl_cffi beautifulsoup4
       
       - name: Scrape shaders
+        # JINA_API_KEY (optional repo secret) lets the scraper authenticate with
+        # Jina's reader so it works from Actions' datacenter IPs. Without it the
+        # scrape fails and the guard below keeps the existing database.
+        env:
+          JINA_API_KEY: ${{ secrets.JINA_API_KEY }}
         run: python scripts/scrape_shaders.py
 
       - name: Guard against a broken scrape

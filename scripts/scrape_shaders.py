@@ -33,6 +33,13 @@ SHADERS_URL = "https://godotshaders.com/shader/"
 # BeautifulSoup parsing below is identical to before.
 JINA_READER_PREFIX = "https://r.jina.ai/"
 
+# Jina's KEYLESS reader rate-limits by IP and rejects datacenter IPs (returns 403
+# from GitHub Actions runners). With a free API key the limit is per-key instead
+# of per-IP, so it works from Actions. Set the JINA_API_KEY repo secret to enable
+# live updates; without it the scrape fails gracefully and the guard in the
+# workflow keeps the existing database. Get a free key at https://jina.ai/reader
+JINA_API_KEY = os.environ.get("JINA_API_KEY", "").strip()
+
 # Output file path relative to script's parent directory (for github/data/)
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 OUTPUT_FILE = os.path.join(SCRIPT_DIR, "..", "data", "shaders.json")
@@ -170,11 +177,15 @@ def fetch_page(url: str, retries: int = MAX_RETRIES) -> Optional[str]:
     fetches it server-side (bypassing the WAF's IP block) and returns the HTML.
     """
     proxied = JINA_READER_PREFIX + url
+    # X-Return-Format: html -> raw page HTML (not Jina's markdown), so the existing
+    # card selectors keep working. The API key (when set) lifts the keyless
+    # per-IP limit that blocks Actions runners.
+    req_headers = {"X-Return-Format": "html"}
+    if JINA_API_KEY:
+        req_headers["Authorization"] = f"Bearer {JINA_API_KEY}"
     for attempt in range(retries):
         try:
-            # X-Return-Format: html -> raw page HTML (not Jina's markdown), so the
-            # existing card selectors keep working. Jina can be slow, hence 90s.
-            response = session.get(proxied, headers={"X-Return-Format": "html"}, timeout=90)
+            response = session.get(proxied, headers=req_headers, timeout=90)  # Jina can be slow
             response.raise_for_status()
             return response.text
         except Exception as e:
