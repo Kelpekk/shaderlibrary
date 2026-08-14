@@ -15,20 +15,31 @@ from urllib.parse import urljoin, urlparse
 from typing import Optional, Dict, Any, List
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-# curl_cffi mimics a real browser's TLS/JA3 fingerprint. godotshaders.com's WAF
-# started returning HTTP 454 to plain `requests` (its TLS fingerprint is easily
-# flagged as non-browser) around 2026-07-28, which is what broke the scraper.
-# The impersonated fingerprint gets through where `requests` is blocked.
+# curl_cffi (browser-impersonating HTTP client) is used to reach the Jina
+# reader below; plain requests would also work here, but curl_cffi is already a
+# dependency and is more robust.
 from curl_cffi import requests
 from bs4 import BeautifulSoup, NavigableString
 
 BASE_URL = "https://godotshaders.com"
 SHADERS_URL = "https://godotshaders.com/shader/"
+
+# godotshaders.com's WAF blocks GitHub Actions IP ranges outright — every direct
+# request returns HTTP 454, regardless of TLS fingerprint (confirmed: even a real
+# Chrome fingerprint via curl_cffi is blocked from Actions runners). So instead
+# of hitting the site directly we fetch each page through Jina's reader
+# (r.jina.ai), which retrieves it from its own (non-blocked) infrastructure and,
+# with the "X-Return-Format: html" header, returns the raw HTML unchanged. The
+# BeautifulSoup parsing below is identical to before.
+JINA_READER_PREFIX = "https://r.jina.ai/"
+
 # Output file path relative to script's parent directory (for github/data/)
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 OUTPUT_FILE = os.path.join(SCRIPT_DIR, "..", "data", "shaders.json")
 PAGES_TO_FETCH = 100  # High number, scraper auto-stops when page is empty
-REQUEST_DELAY = 1.0  # Be nice to the server - increased to avoid WAF
+# Delay between requests. Jina's keyless reader is rate-limited, so we stay well
+# under it; combined with per-page fetch latency the full run takes ~15-30 min.
+REQUEST_DELAY = 3.0
 DETAIL_REQUEST_DELAY = 0.5  # Delay between detail page requests - increased
 MAX_RETRIES = 3
 RETRY_DELAY = 5.0  # Increased retry delay
@@ -153,12 +164,18 @@ def safe_get_text(element, default: str = "") -> str:
 
 
 def fetch_page(url: str, retries: int = MAX_RETRIES) -> Optional[str]:
-    """Fetch a page with a browser-impersonated session and retry logic."""
+    """Fetch a page's raw HTML through the Jina reader, with retry logic.
+
+    The target godotshaders.com URL is appended to the reader prefix; Jina
+    fetches it server-side (bypassing the WAF's IP block) and returns the HTML.
+    """
+    proxied = JINA_READER_PREFIX + url
     for attempt in range(retries):
         try:
-            response = session.get(url, timeout=30)
+            # X-Return-Format: html -> raw page HTML (not Jina's markdown), so the
+            # existing card selectors keep working. Jina can be slow, hence 90s.
+            response = session.get(proxied, headers={"X-Return-Format": "html"}, timeout=90)
             response.raise_for_status()
-            # curl_cffi decodes the body for us; .text is ready to parse.
             return response.text
         except Exception as e:
             # Broad catch — curl_cffi raises its own error types, not
