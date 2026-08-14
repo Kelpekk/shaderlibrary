@@ -471,15 +471,21 @@ def fetch_shader_details(shader: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def fetch_missing_media(shaders: List[Dict[str, Any]]) -> None:
-    """Fetch og:image and video_url from detail pages for shaders missing media."""
-    missing_image = [s for s in shaders if not s.get("image_url")]
-    missing_video = [s for s in shaders if not s.get("video_url")]
-    # Process all shaders that are missing at least one media type
-    to_fetch = list({s["url"]: s for s in missing_image + missing_video}.values())
+    """Fetch og:image (and, opportunistically, video_url) for shaders missing an image.
+
+    Only shaders MISSING AN IMAGE trigger a detail-page fetch. Previously we also
+    chased missing video_url, but most shaders have no video, so that meant a
+    per-shader fetch for almost the entire library — thousands of requests, which
+    is fatal through the rate-limited Jina reader (the July run only reached
+    390/2200 before failures cascaded). GIF previews already get video_url from
+    the GIF logic, and listing-level <video> is captured in parse_shader_card, so
+    skipping the standalone video hunt costs only a handful of rare detail videos.
+    """
+    to_fetch = [s for s in shaders if not s.get("image_url")]
     if not to_fetch:
         return
 
-    print(f"\nFetching media for {len(to_fetch)} shaders with missing image or video...", flush=True)
+    print(f"\nFetching media for {len(to_fetch)} shaders with a missing image...", flush=True)
 
     for shader in to_fetch:
         url = shader.get("url")
@@ -551,6 +557,7 @@ def build_license_mapping() -> Dict[str, str]:
         license_count = 0
         seen_this_license = set()  # Track seen URLs to detect pagination loops
         
+        lic_failures = 0
         while page <= PAGES_TO_FETCH:
             if page == 1:
                 url = filter_url
@@ -562,11 +569,18 @@ def build_license_mapping() -> Dict[str, str]:
                     url = f"{base}page/{page}/?{query}"
                 else:
                     url = f"{filter_url}page/{page}/"
-            
+
             html_content = fetch_page(url)
             if not html_content:
-                break
-                
+                # Transient failure — skip this page, don't abandon the license.
+                lic_failures += 1
+                if lic_failures >= 5:
+                    break
+                page += 1
+                time.sleep(REQUEST_DELAY)
+                continue
+            lic_failures = 0
+
             soup = BeautifulSoup(html_content, "html.parser")
             articles = soup.select("article.gds-shader-card")
             
@@ -609,22 +623,35 @@ def scrape_all_shaders() -> List[Dict[str, Any]]:
     license_mapping = build_license_mapping()
     
     print(f"\nFetching shader list from {PAGES_TO_FETCH} pages...", flush=True)
-    
+
+    # A failed fetch (Jina timeout / transient rate-limit) must NOT be mistaken
+    # for "no more pages" — otherwise one flaky page truncates the whole scrape
+    # (that's how the July run stopped at 390/2200). Skip failed pages and only
+    # give up after several consecutive failures.
+    consecutive_failures = 0
+    MAX_CONSECUTIVE_FAILURES = 5
+
     for page in range(1, PAGES_TO_FETCH + 1):
         if page == 1:
             url = SHADERS_URL
         else:
             url = f"{SHADERS_URL}page/{page}/"
-        
+
         print(f"Fetching page {page}/{PAGES_TO_FETCH}: {url}", flush=True)
-        
+
         try:
             html_content = fetch_page(url)
             if not html_content:
-                # Failed to fetch - likely 404 (no more pages)
-                print(f"  Failed to fetch page {page}, stopping pagination")
-                break
-                
+                consecutive_failures += 1
+                print(f"  Failed to fetch page {page} "
+                      f"({consecutive_failures}/{MAX_CONSECUTIVE_FAILURES} consecutive)")
+                if consecutive_failures >= MAX_CONSECUTIVE_FAILURES:
+                    print("  Too many consecutive failures, stopping pagination")
+                    break
+                time.sleep(REQUEST_DELAY)
+                continue
+            consecutive_failures = 0
+
             soup = BeautifulSoup(html_content, "html.parser")
             
             # Find shader cards (article elements)
